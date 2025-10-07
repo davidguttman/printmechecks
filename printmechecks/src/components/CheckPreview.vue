@@ -11,10 +11,17 @@ defineProps<{
 <template>
   <div class="check-box">
     <div class="check-box-print">
-      <div class="account-holder-name" style="position: absolute; top: 40px; left: 60px">{{ check.accountHolderName }}</div>
-      <div class="account-holder-address" style="position: absolute; top: 70px; left: 60px">
-        {{ check.accountHolderAddress }}<br>
-        {{ check.accountHolderCity }}, {{ check.accountHolderState }} {{ check.accountHolderZip }}
+      <div class="account-header">
+        <div v-if="check.companyLogo" class="company-logo">
+          <img :src="check.companyLogo" alt="Company logo">
+        </div>
+        <div class="account-holder-info">
+          <div class="account-holder-name">{{ check.accountHolderName }}</div>
+          <div class="account-holder-address">
+            {{ check.accountHolderAddress }}<br>
+            {{ check.accountHolderCity }}, {{ check.accountHolderState }} {{ check.accountHolderZip }}
+          </div>
+        </div>
       </div>
       <div class="check-number-human" style="position: absolute; top: 40px; left: 1060px">{{ check.checkNumber }}</div>
       <div class="date-data" style="position: absolute; top: 80px; left: 850px">{{ check.date }}</div>
@@ -69,6 +76,19 @@ defineProps<{
   max-width: 350px;
   line-height: 0.65;
 }
+.account-header {
+  position: absolute;
+  top: 40px;
+  left: 60px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.account-holder-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .signature-data {
   font-family: Caveat;
   font-size: 40px;
@@ -77,6 +97,18 @@ defineProps<{
 .signature-image {
   max-width: 260px;
   max-height: 80px;
+  object-fit: contain;
+}
+.company-logo {
+  display: flex;
+  align-items: center;
+  max-width: 200px;
+  max-height: 80px;
+}
+.company-logo img {
+  max-height: 80px;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
 }
 .amount-line-data {

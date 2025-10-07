@@ -72,6 +72,7 @@ export function createDefaultCheck(): CheckData {
     memo: recent?.memo || 'Rent',
     signature: recent?.signature || 'John Smith',
     signatureSvg: recent?.signatureSvg || null,
+    companyLogo: recent?.companyLogo || null,
     routingNumber: recent?.routingNumber || '022303659',
     bankAccountNumber: recent?.bankAccountNumber || '000000000000'
   }

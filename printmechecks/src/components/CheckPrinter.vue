@@ -17,6 +17,25 @@
                     <input type="email" class="form-control" id="inputEmail4" v-model="check.accountHolderName">
                 </div>
                 <div class="col-md-6">
+                    <label for="companyLogo" class="form-label">Company Logo</label>
+                    <input
+                        id="companyLogo"
+                        ref="companyLogoInput"
+                        type="file"
+                        accept="image/*"
+                        class="form-control"
+                        @change="handleCompanyLogoUpload"
+                    >
+                    <div class="form-text">Upload logo image (PNG, JPG, SVG, etc.).</div>
+                    <button
+                        v-if="check.companyLogo"
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        style="margin-top: 10px;"
+                        @click="clearCompanyLogo"
+                    >
+                        Remove logo
+                    </button>
                 </div>
                 <div class="col-md-4">
                     <label for="inputAddress" class="form-label">Address</label>
@@ -116,6 +135,7 @@ const state = useAppStore()
 const router = useRouter()
 const check = reactive<CheckData>(createDefaultCheck())
 const signatureSvgInput = ref<HTMLInputElement | null>(null)
+const companyLogoInput = ref<HTMLInputElement | null>(null)
 
 const toWordsTool = new ToWords({
   localeCode: 'en-US',
@@ -218,6 +238,38 @@ function clearSignatureSvg() {
     check.signatureSvg = null
     if (signatureSvgInput.value) {
         signatureSvgInput.value.value = ''
+    }
+}
+
+function handleCompanyLogoUpload(event: Event) {
+    const target = event.target as HTMLInputElement
+    const file = target.files?.[0]
+
+    if (!file) {
+        check.companyLogo = null
+        return
+    }
+
+    if (!file.type.startsWith('image/')) {
+        target.value = ''
+        return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : null
+        if (result) {
+            check.companyLogo = result
+        }
+        target.value = ''
+    }
+    reader.readAsDataURL(file)
+}
+
+function clearCompanyLogo() {
+    check.companyLogo = null
+    if (companyLogoInput.value) {
+        companyLogoInput.value.value = ''
     }
 }
 

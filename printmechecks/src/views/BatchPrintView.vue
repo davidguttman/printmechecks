@@ -29,6 +29,7 @@ const initialTemplate = state.batchTemplate
 
 const baseCheck = ref<CheckData>(initialTemplate)
 const checkCount = ref<number>(DEFAULT_COUNT)
+const companyLogoInput = ref<HTMLInputElement | null>(null)
 
 const toWordsTool = new ToWords({
   localeCode: 'en-US',
@@ -137,6 +138,38 @@ watch(
   },
   { deep: true }
 )
+
+function handleCompanyLogoUpload(event: Event): void {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) {
+    baseCheck.value.companyLogo = null
+    return
+  }
+
+  if (!file.type.startsWith('image/')) {
+    target.value = ''
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    const result = typeof reader.result === 'string' ? reader.result : null
+    if (result) {
+      baseCheck.value.companyLogo = result
+    }
+    target.value = ''
+  }
+  reader.readAsDataURL(file)
+}
+
+function clearCompanyLogo(): void {
+  baseCheck.value.companyLogo = null
+  if (companyLogoInput.value) {
+    companyLogoInput.value.value = ''
+  }
+}
 </script>
 
 <template>
@@ -212,6 +245,27 @@ watch(
               type="text"
               class="form-control"
             >
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="batch-company-logo">Company logo</label>
+            <input
+              id="batch-company-logo"
+              ref="companyLogoInput"
+              type="file"
+              accept="image/*"
+              class="form-control"
+              @change="handleCompanyLogoUpload"
+            >
+            <div class="form-text">Upload image (PNG, JPG, SVG, etc.).</div>
+            <button
+              v-if="baseCheck.companyLogo"
+              type="button"
+              class="btn btn-outline-secondary btn-sm"
+              style="margin-top: 10px;"
+              @click="clearCompanyLogo"
+            >
+              Remove logo
+            </button>
           </div>
           <div class="col-md-6">
             <label class="form-label" for="batch-account-holder-address">Address</label>

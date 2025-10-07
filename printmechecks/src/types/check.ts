@@ -12,6 +12,7 @@ export interface CheckData {
   memo: string
   signature: string
   signatureSvg: string | null
+  companyLogo: string | null
   routingNumber: string
   bankAccountNumber: string
   lineLength?: number
