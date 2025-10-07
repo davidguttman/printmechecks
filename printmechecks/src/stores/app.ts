@@ -1,8 +1,10 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import type { CheckData } from '../types/check'
 
 export const useAppStore = defineStore('useAppStore', () => {
-  const check = ref(null)
+  const check = ref<CheckData | null>(null)
+  const batchTemplate = ref<CheckData | null>(null)
 
-  return { check }
+  return { check, batchTemplate }
 })

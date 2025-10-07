@@ -16,7 +16,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(item, index) in history" :key="item.id">
+                    <tr v-for="(item, index) in history" :key="`${item.checkNumber}-${index}`">
                         <td>{{ item.checkNumber }}</td>
                         <td>${{ formatMoney(item.amount) }}</td>
                         <td>{{ item.payTo }}</td>
@@ -36,29 +36,30 @@
 <style>
 </style>
 
-<script setup>
-import {formatMoney} from '../utilities.ts'
-import { ref, onMounted} from 'vue'
-import { useAppStore } from '../stores/app.ts'
+<script setup lang="ts">
+import { cloneCheck, formatMoney, getHistory, saveHistory } from '../utilities'
+import { ref, onMounted } from 'vue'
+import { useAppStore } from '../stores/app'
 import { useRouter } from 'vue-router'
+import type { CheckData } from '../types/check'
 
 const state = useAppStore()
 const router = useRouter()
 
-const history = ref([])
+const history = ref<CheckData[]>([])
 
 const loadHistory = () => {
-  history.value = JSON.parse(localStorage.getItem('checkList') || '[]')
+  history.value = getHistory()
 }
 
-const deleteItem = (index) => {
+const deleteItem = (index: number) => {
   history.value.splice(index, 1)
-  localStorage.setItem('checkList', JSON.stringify(history.value))
+  saveHistory(history.value)
 }
 
-const viewItem = (index) => {
+const viewItem = (index: number) => {
     const item = history.value[index]
-    state.check = item
+    state.check = cloneCheck(item)
     router.push('/')
 }
 

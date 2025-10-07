@@ -15,6 +15,9 @@ import { RouterLink, RouterView } from 'vue-router'
             <li class="nav-item">
                 <RouterLink to="/history" class="nav-link" :class="{'active': $route.path == '/history'}">History</RouterLink>
             </li>
+            <li class="nav-item">
+                <RouterLink to="/batch-print" class="nav-link" :class="{'active': $route.path == '/batch-print'}">Batch Print</RouterLink>
+            </li>
         </ul>
       <nav>
       </nav>

@@ -1,62 +1,16 @@
 <template>
     <div class="wrapper" id="wrapper" style="position: relative;">
-        <div class="check-box" id="check-box">
-            <div style="position: relative;" id="check-box-print">
-                <div class="account-holder-name" style="position: absolute; top: 40px; left: 60px">{{check.accountHolderName}}</div>
-                <div class="account-holder-address" style="position: absolute; top: 70px; left: 60px">
-                    {{check.accountHolderAddress}}<br>
-                    {{check.accountHolderCity}}, {{check.accountHolderState}} {{check.accountHolderZip}}
-                </div>
-                <div class="check-number-human" style="position: absolute; top: 40px; left: 1060px">{{check.checkNumber}}</div>
-                <div class="date-data" style="position: absolute; top: 80px; left: 850px">{{check.date}}</div>
-                <div class="date" style="position: absolute; top: 90px; left: 760px">Date: _____________________ </div>
-                <div class="amount-box" style="position: absolute; top: 175px; left: 950px">
-
-                </div>
-                <div class="amount-data" style="position: absolute; top: 182px; left: 970px">{{formatMoney(check.amount)}}</div>
-                <div class="pay-to-data" style="position: absolute; top: 180px; left: 180px">{{check.payTo}}</div>
-                <div class="pay-to" style="position: absolute; top: 170px; left: 60px">
-                    Pay to the <br>Order of <span class="payto-line"></span>
-                </div>
-                <div class="amount-line-data" ref="line" style="position: absolute; top: 240px; left: 100px">
-                    ***
-                    {{toWords(check.amount)}} 
-                    ***
-                </div>
-                <div class="amount-line" style="position: absolute; top: 250px; left: 60px">
-                    <span class="dollar-line"></span>
-                </div>
-                <div class="bank-name" style="position: absolute; top: 300px; left: 60px">{{check.bankName}}</div>
-                <div class="memo-data" style="position: absolute; top: 385px; left: 120px">{{check.memo}}</div>
-                <div class="memo" style="position: absolute; top: 390px; left: 60px">
-                    Memo: ____________________________________
-                </div>
-                <div class="signature-data" style="position: absolute; top: 366px; left: 770px">
-                    <img
-                        v-if="check.signatureSvg"
-                        :src="check.signatureSvg"
-                        alt="Signature"
-                        class="signature-image"
-                    />
-                    <template v-else>
-                        {{check.signature}}
-                    </template>
-                </div>
-                <div class="signature" style="position: absolute; top: 390px; left: 750px">
-                    _________________________________________________
-                </div>
-                <div class="banking" style="position: absolute; top: 420px; left: 80px">
-                    <div class="routing" style="display: inline;">
-                        a{{check.routingNumber}}a
-                    </div>
-                    <div class="bank-account" style="display: inline;">{{check.bankAccountNumber}}c</div>
-                    <div class="check-number" style="display: inline; margin-left:20px">{{check.checkNumber}}</div>
-                </div>
-            </div>
-        </div>
+        <CheckPreview
+            :check="check"
+            :format-money="formatMoney"
+            :to-words="toWords"
+        />
         <div class="check-data" style="position: absolute; top: 450px">
             <div class="alert alert-primary" role="alert"><strong>Background does not print.</strong></div>
-            <button type="button" style="float: right;" class="btn btn-primary" @click="printCheck">Print (Ctrl + P)</button>
+            <div class="action-buttons">
+                <button type="button" class="btn btn-secondary" @click="openBatchPrint">Print 12-week series</button>
+                <button type="button" class="btn btn-primary" @click="printCheck">Print (Ctrl + P)</button>
+            </div>
             <form class="row g-3">
                 <div class="col-md-6">
                     <label for="inputEmail4" class="form-label">Account Holder Name</label>
@@ -150,13 +104,18 @@
 </template>
 
 <script setup lang="ts">
-import print from 'print-js';
 import { ToWords } from 'to-words';
-import { ref, reactive, nextTick, watch, onMounted, onUnmounted } from 'vue'
-import { formatMoney } from '../utilities.ts'
-import { useAppStore } from '../stores/app.ts'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import CheckPreview from './CheckPreview.vue'
+import { appendToHistory, cloneCheck, createDefaultCheck, formatMoney } from '../utilities'
+import { useAppStore } from '../stores/app'
+import type { CheckData } from '../types/check'
 
 const state = useAppStore()
+const router = useRouter()
+const check = reactive<CheckData>(createDefaultCheck())
+const signatureSvgInput = ref<HTMLInputElement | null>(null)
 
 const toWordsTool = new ToWords({
   localeCode: 'en-US',
@@ -170,7 +129,7 @@ const toWordsTool = new ToWords({
 
 const toWords: (denom: number | string) => string = (denom) => {
     try {
-        return toWordsTool.convert(Number(denom), );
+        return toWordsTool.convert(Number(denom));
     } catch (e) {
         return `${e}`;
     }
@@ -219,48 +178,6 @@ function printCheck () {
     style.remove();
 }
 
-function saveToHistory () {
-    let checkList = JSON.parse(localStorage.getItem('checkList') || '[]')
-    checkList.push(check)
-    localStorage.setItem('checkList', JSON.stringify(checkList))
-}
-
-function genNewCheck () {
-    let checkList = JSON.parse(localStorage.getItem('checkList') || '[]')
-    let recentCheck = checkList[checkList.length - 1]
-    let check = {}
-    check.accountHolderName = recentCheck?.accountHolderName || 'John Smith'
-    check.accountHolderAddress = recentCheck?.accountHolderAddress || '123 Cherry Tree Lane'
-    check.accountHolderCity = recentCheck?.accountHolderCity || 'New York'
-    check.accountHolderState = recentCheck?.accountHolderState || 'NY'
-    check.accountHolderZip = recentCheck?.accountHolderZip || '10001'
-    check.checkNumber = recentCheck?.checkNumber ? (parseInt(recentCheck?.checkNumber) + 1) : '100'
-    check.date = new Date().toLocaleDateString()
-    check.bankName = recentCheck?.bankName || 'Bank Name, INC'
-    check.amount = '0.00'
-    check.payTo = 'Michael Johnson'
-    check.memo = recentCheck?.memo || 'Rent'
-    check.signature = recentCheck?.signature || 'John Smith'
-    check.signatureSvg = recentCheck?.signatureSvg || null
-    check.routingNumber = recentCheck?.routingNumber || '022303659'
-    check.bankAccountNumber = recentCheck?.bankAccountNumber || '000000000000'
-    return check
-}
-
-const check = reactive(
-    genNewCheck()
-)
-
-const line = ref(null)
-const signatureSvgInput = ref<HTMLInputElement | null>(null)
-
-watch(check, async () => {
-    await nextTick(() => {
-        let computedLine = line?.value?.clientWidth
-        check.lineLength = computedLine
-    })
-}, { immediate: true })
-
 function handlePrintShortcut(event: KeyboardEvent) {
     if (event.ctrlKey && event.key === 'p') {
         event.preventDefault();
@@ -293,6 +210,10 @@ function handleSignatureSvgUpload(event: Event) {
     reader.readAsDataURL(file)
 }
 
+function saveToHistory () {
+    appendToHistory(check)
+}
+
 function clearSignatureSvg() {
     check.signatureSvg = null
     if (signatureSvgInput.value) {
@@ -300,23 +221,14 @@ function clearSignatureSvg() {
     }
 }
 
+function openBatchPrint() {
+    state.batchTemplate = cloneCheck(check)
+    router.push('/batch-print')
+}
+
 onMounted(() => {
     if (state.check) {
-        check.accountHolderName = state.check.accountHolderName
-        check.accountHolderAddress = state.check.accountHolderAddress
-        check.accountHolderCity = state.check.accountHolderCity
-        check.accountHolderState = state.check.accountHolderState
-        check.accountHolderZip = state.check.accountHolderZip
-        check.checkNumber = state.check.checkNumber
-        check.date = state.check.date
-        check.bankName = state.check.bankName
-        check.amount = state.check.amount
-        check.payTo = state.check.payTo
-        check.memo = state.check.memo
-        check.signature = state.check.signature
-        check.signatureSvg = state.check.signatureSvg || null
-        check.routingNumber = state.check.routingNumber
-        check.bankAccountNumber = state.check.bankAccountNumber
+        Object.assign(check, state.check)
     }
     state.check = null
 
@@ -330,30 +242,7 @@ onUnmounted(() => {
 </script>
 
 <style>
-
 label {
-    font-weight: bold;
-}
-.memo-data {
-    font-size: 24px;
-    max-width: 350px;
-    line-height: 0.65;
-}
-.signature-data {
-    font-family: Caveat;
-    font-size: 40px;
-    transform: rotate(-2deg);
-}
-.signature-image {
-    max-width: 260px;
-    max-height: 80px;
-    object-fit: contain;
-}
-.amount-line-data {
-    text-transform: capitalize;
-}
-.date-data, .pay-to-data, .amount-data{
-    font-size: 20px;
     font-weight: bold;
 }
 .check-data {
@@ -361,76 +250,10 @@ label {
     padding: 50px 120px;
     border-top: 1px solid #e6e6e6;
 }
-.bank-name{
-    font-size: 20px;
-    font-weight: bold;
-}
-.account-holder-name {
-    font-size: 20px;
-    font-weight: bold;
-}
-.check-number-human {
-    font-size: 20px;
-    font-weight: bold;
-}
-.amount-box::before {
-    content: "$";
-    font-size: 20px;
-    margin-left: -15px;
-    font-weight: bold;
-}
-.amount-box {
-    width: 225px;
-    height: 40px;
-    border: 1px solid #c7c7c7;
-    background-color: white;
-}
-.check-box {
-    width: 1200px;
-    height: 1553px;
-    border: 1px solid #e6e6e6;
-    background-color: white;
-    margin: 0 auto;
-    background: url('../assets/checkbg.png');
-    background-repeat: no-repeat;
-    background-size: contain;
-}
-
-#check-box {
-    width: 100%;
-}
-
-@font-face {
-    font-family: 'banking';
-    src: url('../assets/micrenc.ttf');
-}
-
-
-.banking {
-    font-family: 'banking';
-    font-size: 37px;
-}
-.dollar-line::after{
-    content: "Dollars";
-    font-size: 18px;
-    position: absolute;
-    right: -73px;
-    top: 0;
-}
-.dollar-line {
-    width: 840px;
-    display: block;
-    border-bottom: 1px solid black;
-    margin-left: 10px;
-    margin-top: 20px;
-}
-.payto-line {
-    width: 776px;
-    display: block;
-    border-bottom: 1px solid black;
-    margin-left: 73px;
-    border-right: 1px solid black;
-    height: 28px;
-    margin-top: -32px;
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-bottom: 20px;
 }
 </style>
