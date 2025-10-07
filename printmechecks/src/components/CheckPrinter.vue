@@ -27,11 +27,21 @@
                     <span class="dollar-line"></span>
                 </div>
                 <div class="bank-name" style="position: absolute; top: 300px; left: 60px">{{check.bankName}}</div>
-                <div class="memo-data" style="position: absolute; top: 367px; left: 120px">{{check.memo}}</div>
+                <div class="memo-data" style="position: absolute; top: 385px; left: 120px">{{check.memo}}</div>
                 <div class="memo" style="position: absolute; top: 390px; left: 60px">
                     Memo: ____________________________________
                 </div>
-                <div class="signature-data" style="position: absolute; top: 366px; left: 770px">{{check.signature}}</div>
+                <div class="signature-data" style="position: absolute; top: 366px; left: 770px">
+                    <img
+                        v-if="check.signatureSvg"
+                        :src="check.signatureSvg"
+                        alt="Signature"
+                        class="signature-image"
+                    />
+                    <template v-else>
+                        {{check.signature}}
+                    </template>
+                </div>
                 <div class="signature" style="position: absolute; top: 390px; left: 750px">
                     _________________________________________________
                 </div>
@@ -107,8 +117,29 @@
                     <input type="email" class="form-control" id="inputEmail4" v-model="check.date">
                 </div>
                 <div class="col-md-6">
-                    <label for="inputZip" class="form-label">Signature</label>
-                    <input type="text" class="form-control" v-model="check.signature">
+                    <label for="signatureText" class="form-label">Signature Text</label>
+                    <input id="signatureText" type="text" class="form-control" v-model="check.signature">
+                </div>
+                <div class="col-md-6">
+                    <label for="signatureSvg" class="form-label">Signature SVG</label>
+                    <input
+                        id="signatureSvg"
+                        ref="signatureSvgInput"
+                        type="file"
+                        accept="image/svg+xml"
+                        class="form-control"
+                        @change="handleSignatureSvgUpload"
+                    >
+                    <div class="form-text">Upload an SVG signature image.</div>
+                    <button
+                        v-if="check.signatureSvg"
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        style="margin-top: 10px;"
+                        @click="clearSignatureSvg"
+                    >
+                        Remove signature image
+                    </button>
                 </div>
             </form>
             <div class="col-12" style="margin-top: 30px;">
@@ -210,6 +241,7 @@ function genNewCheck () {
     check.payTo = 'Michael Johnson'
     check.memo = recentCheck?.memo || 'Rent'
     check.signature = recentCheck?.signature || 'John Smith'
+    check.signatureSvg = recentCheck?.signatureSvg || null
     check.routingNumber = recentCheck?.routingNumber || '022303659'
     check.bankAccountNumber = recentCheck?.bankAccountNumber || '000000000000'
     return check
@@ -220,6 +252,7 @@ const check = reactive(
 )
 
 const line = ref(null)
+const signatureSvgInput = ref<HTMLInputElement | null>(null)
 
 watch(check, async () => {
     await nextTick(() => {
@@ -232,6 +265,38 @@ function handlePrintShortcut(event: KeyboardEvent) {
     if (event.ctrlKey && event.key === 'p') {
         event.preventDefault();
         printCheck();
+    }
+}
+
+function handleSignatureSvgUpload(event: Event) {
+    const target = event.target as HTMLInputElement
+    const file = target.files?.[0]
+
+    if (!file) {
+        check.signatureSvg = null
+        return
+    }
+
+    if (file.type !== 'image/svg+xml') {
+        target.value = ''
+        return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : null
+        if (result) {
+            check.signatureSvg = result
+        }
+        target.value = ''
+    }
+    reader.readAsDataURL(file)
+}
+
+function clearSignatureSvg() {
+    check.signatureSvg = null
+    if (signatureSvgInput.value) {
+        signatureSvgInput.value.value = ''
     }
 }
 
@@ -249,6 +314,7 @@ onMounted(() => {
         check.payTo = state.check.payTo
         check.memo = state.check.memo
         check.signature = state.check.signature
+        check.signatureSvg = state.check.signatureSvg || null
         check.routingNumber = state.check.routingNumber
         check.bankAccountNumber = state.check.bankAccountNumber
     }
@@ -269,8 +335,7 @@ label {
     font-weight: bold;
 }
 .memo-data {
-    font-family: Caveat;
-    font-size: 30px;
+    font-size: 24px;
     max-width: 350px;
     line-height: 0.65;
 }
@@ -278,6 +343,11 @@ label {
     font-family: Caveat;
     font-size: 40px;
     transform: rotate(-2deg);
+}
+.signature-image {
+    max-width: 260px;
+    max-height: 80px;
+    object-fit: contain;
 }
 .amount-line-data {
     text-transform: capitalize;
